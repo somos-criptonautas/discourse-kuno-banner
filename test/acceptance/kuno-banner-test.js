@@ -1,0 +1,83 @@
+import { click, visit } from "@ember/test-helpers";
+import { test } from "qunit";
+import { cloneJSON } from "discourse/lib/object";
+import discoveryFixtures from "discourse/tests/fixtures/discovery-fixtures";
+import { acceptance } from "discourse/tests/helpers/qunit-helpers";
+
+const KUNO = "https://kuno.anne.media/fundraiser/abcd";
+
+// One item per test, so the day's pick is the same whatever the date.
+const tagged = cloneJSON(discoveryFixtures["/latest.json"]);
+tagged.topic_list.topics = tagged.topic_list.topics.slice(0, 1);
+const [topic] = tagged.topic_list.topics;
+
+acceptance("Kuno Banner", function (needs) {
+  let tagTopics;
+
+  needs.pretender((server, helper) => {
+    server.get("/tag/kuno.json", () =>
+      tagTopics ? helper.response(cloneJSON(tagged)) : helper.response(404, {})
+    );
+  });
+
+  let original;
+
+  needs.hooks.beforeEach(function () {
+    localStorage.clear();
+    tagTopics = true;
+    original = settings.supported_kunos;
+    settings.supported_kunos = "";
+  });
+
+  needs.hooks.afterEach(function () {
+    settings.supported_kunos = original;
+  });
+
+  test("shows the tagged topic on the homepage", async function (assert) {
+    await visit("/");
+
+    assert.dom(".kuno-banner__link").hasText(topic.title);
+    assert
+      .dom(".kuno-banner__link")
+      .hasAttribute("href", `/t/${topic.slug}/${topic.id}`);
+  });
+
+  test("shows a supported Kuno when no topic has the tag", async function (assert) {
+    tagTopics = false;
+    settings.supported_kunos = KUNO;
+
+    await visit("/");
+
+    assert.dom(".kuno-banner__intro").exists();
+    assert.dom(".kuno-banner__link").hasText(KUNO);
+    assert.dom(".kuno-banner__link").hasAttribute("href", KUNO);
+    assert.dom(".kuno-banner__link").hasAttribute("rel", "noopener noreferrer");
+  });
+
+  test("drops supported Kunos that aren't https", async function (assert) {
+    tagTopics = false;
+    settings.supported_kunos = "javascript:alert(1)|http://kuno.example";
+
+    await visit("/");
+
+    assert.dom(".kuno-banner").doesNotExist();
+  });
+
+  test("stays hidden after dismissing", async function (assert) {
+    await visit("/");
+    await click(".kuno-banner__close");
+
+    assert.dom(".kuno-banner").doesNotExist();
+
+    await visit("/top");
+    await visit("/");
+
+    assert.dom(".kuno-banner").doesNotExist();
+  });
+
+  test("only renders on the homepage", async function (assert) {
+    await visit("/top");
+
+    assert.dom(".kuno-banner").doesNotExist();
+  });
+});

@@ -1,0 +1,39 @@
+@use "lib/viewport";
+
+// Card in the shape of Horizon's campaign banner: close button pinned top right,
+// colours from --d-* / palette variables so every palette applies.
+.kuno-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-10) var(--space-3) var(--space-4);
+  border-radius: var(--d-border-radius-large);
+  background: var(--tertiary-very-low);
+  color: var(--primary);
+
+  &__content {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  &__intro {
+    margin-right: var(--space-1);
+  }
+
+  &__link {
+    font-weight: bold;
+  }
+
+  &__close {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-1);
+  }
+
+  // The welcome banner is hidden on phones here, so keep this one to a short line.
+  @include viewport.until(sm) {
+    padding-block: var(--space-2);
+    font-size: var(--font-down-1);
+  }
+}

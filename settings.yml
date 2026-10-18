@@ -1,0 +1,7 @@
+kuno_tag:
+  type: string
+  default: "kuno"
+supported_kunos:
+  type: list
+  list_type: simple
+  default: ""
